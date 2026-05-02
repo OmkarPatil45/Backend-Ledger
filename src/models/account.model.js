@@ -70,6 +70,15 @@ accountSchema.methods.getBalance = async function() {
             }
         }
     ])
+
+    if(balanceData.length === 0) {
+        return 0
+    }
+
+    // if there are no transactions for the account, balanceData will be an empty array
+    // and accessing balanceData[0].balance will throw an error. 
+    // By using 0, we ensure that if there are no transactions, the balance will be returned as 0 instead of throwing an error.
+    return balanceData[0].balance
 }
 
 
