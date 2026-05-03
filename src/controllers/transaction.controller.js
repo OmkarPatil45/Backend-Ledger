@@ -76,7 +76,7 @@ async function createTransaction(req, res) {
             })
         }
 
-        if (isTransactionAlreadyExists.status === "RVERSED") {
+        if (isTransactionAlreadyExists.status === "REVERSED") {
             return res.status(500).json({
                 message: "Transaction was reversed, please retry"
             })
@@ -159,6 +159,10 @@ async function createTransaction(req, res) {
      * 10. Send email notification (This is a placeholder, actual implementation 
      * would involve integrating with an email service)
      */
+    return res.status(201).json({
+        message: "Transaction completed successfully",
+        transaction: transaction
+    })
 }
 
 async function createInitialFundsTransaction(req, res) {
@@ -170,19 +174,23 @@ async function createInitialFundsTransaction(req, res) {
         })
     }
 
+    console.log("Looking for account with _id:", toAccount)
     const toUserAccount = await accountModel.findOne({
         _id: toAccount,
     })
 
+    console.log("Found account:", toUserAccount)
+
     if (!toUserAccount) {
         return res.status(400).json({
-            message: "Invalid toAccount ID"
+            message: "Invalid toAccount ID",
+            receivedId: toAccount
         })
     }
 
     const fromUserAccount = await accountModel.findOne({
         systemUser: true,
-        user:req.user._id
+        user: req.user._id
     })
 
     if (!fromUserAccount) {
@@ -194,37 +202,37 @@ async function createInitialFundsTransaction(req, res) {
     const session = await mongoose.startSession()
     session.startTransaction()
 
-    const transaction = await transactionModel.create({
+    const transaction = await transactionModel.create([{
         fromAccount: fromUserAccount._id,
         toAccount,
         amount,
         idempotencyKey,
         status: "PENDING"
-    }, { session })
+    }], { session })
 
-    const debitLedgerEntry = await ledgerModel.create({
+    const debitLedgerEntry = await ledgerModel.create([{
         account: fromUserAccount._id,
         amount: amount,
-        transaction: transaction._id,
+        transaction: transaction[0]._id,
         type: "DEBIT"
-    }, { session })
+    }], { session })
 
-    const creditLedgerEntry = await ledgerModel.create({
+    const creditLedgerEntry = await ledgerModel.create([{
         account: toAccount,
         amount: amount,
-        transaction: transaction._id,
+        transaction: transaction[0]._id,
         type: "CREDIT"
-    }, { session })
+    }], { session })
 
-    transaction.status = "COMPLETED"
-    await transaction.save({ session })
+    transaction[0].status = "COMPLETED"
+    await transaction[0].save({ session })
 
     await session.commitTransaction()
     session.endSession()
 
     return res.status(201).json({
         message: "Initial funds transaction completed successfully",
-        transaction: transaction
+        transaction: transaction[0]
     })
 }
 
