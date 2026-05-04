@@ -189,8 +189,8 @@ async function createInitialFundsTransaction(req, res) {
     }
 
     const fromUserAccount = await accountModel.findOne({
-        systemUser: true,
-        user: req.user._id
+        // systemUser: true
+         user: req.user._id
     })
 
     if (!fromUserAccount) {
@@ -202,37 +202,37 @@ async function createInitialFundsTransaction(req, res) {
     const session = await mongoose.startSession()
     session.startTransaction()
 
-    const transaction = await transactionModel.create([{
+    const transaction = new transactionModel({
         fromAccount: fromUserAccount._id,
         toAccount,
         amount,
         idempotencyKey,
         status: "PENDING"
-    }], { session })
+    })
 
-    const debitLedgerEntry = await ledgerModel.create([{
+    const debitLedgerEntry = await ledgerModel.create([ {
         account: fromUserAccount._id,
         amount: amount,
-        transaction: transaction[0]._id,
+        transaction: transaction._id,
         type: "DEBIT"
-    }], { session })
+    }] , { session })
 
-    const creditLedgerEntry = await ledgerModel.create([{
+    const creditLedgerEntry = await ledgerModel.create([ {
         account: toAccount,
         amount: amount,
-        transaction: transaction[0]._id,
+        transaction: transaction._id,
         type: "CREDIT"
-    }], { session })
+    } ], { session })
 
-    transaction[0].status = "COMPLETED"
-    await transaction[0].save({ session })
+    transaction.status = "COMPLETED"
+    await transaction.save({ session })
 
     await session.commitTransaction()
     session.endSession()
 
     return res.status(201).json({
         message: "Initial funds transaction completed successfully",
-        transaction: transaction[0]
+        transaction: transaction
     })
 }
 
