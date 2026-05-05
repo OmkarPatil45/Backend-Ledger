@@ -2,7 +2,7 @@ const userModel = require("../models/user.model")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
 const bcrypt = require("bcryptjs")
-const tokenBlacklistModel = require("../models/accounts.model")
+const tokenBlacklistModel = require("../models/blackList.model")
 
 dotenv.config()
 
