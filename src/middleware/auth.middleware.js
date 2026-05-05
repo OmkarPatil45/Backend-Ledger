@@ -2,7 +2,7 @@ const userModel = require("../models/user.model")
 const jwt = require("jsonwebtoken")
 const dotenv = require("dotenv")
 dotenv.config()
-const tokenBlacklistModel = require("../models/accounts.model")
+const tokenBlacklistModel = require("../models/blackList.model")
 
 async function authMiddleware(req, res, next){
     const token = req.cookies.token || req.headers.authorization?.split(" ") [1]
